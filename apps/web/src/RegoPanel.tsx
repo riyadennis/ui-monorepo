@@ -2,12 +2,20 @@ import { useMemo, useState } from 'react';
 import { regoPolicy } from '@ui-monorepo/rego';
 import { Button } from '@ui-monorepo/ui';
 
+interface DenyRule {
+  condition: string;
+  message: string;
+}
+
 export function RegoPanel() {
   const [packageName, setPackageName] = useState('authz');
   const [conditions, setConditions] = useState<string[]>([
     'input.user.role == "admin"',
   ]);
   const [draft, setDraft] = useState('');
+  const [denies, setDenies] = useState<DenyRule[]>([]);
+  const [denyDraft, setDenyDraft] = useState('');
+  const [denyMessage, setDenyMessage] = useState('');
 
   const source = useMemo(() => {
     try {
@@ -15,17 +23,32 @@ export function RegoPanel() {
       for (const condition of conditions) {
         policy.allowIf(condition);
       }
+      for (const deny of denies) {
+        policy.denyIf(deny.condition, deny.message);
+      }
       return policy.build();
     } catch (err) {
       return `# ${(err as Error).message}`;
     }
-  }, [packageName, conditions]);
+  }, [packageName, conditions, denies]);
 
   function addCondition() {
     const trimmed = draft.trim();
     if (trimmed) {
       setConditions((prev) => [...prev, trimmed]);
       setDraft('');
+    }
+  }
+
+  function addDeny() {
+    const condition = denyDraft.trim();
+    if (condition) {
+      setDenies((prev) => [
+        ...prev,
+        { condition, message: denyMessage.trim() || 'request denied' },
+      ]);
+      setDenyDraft('');
+      setDenyMessage('');
     }
   }
 
@@ -65,7 +88,48 @@ export function RegoPanel() {
               <button
                 onClick={() => setConditions((prev) => prev.filter((_, j) => j !== i))}
                 style={removeStyle}
-                aria-label="remove condition"
+                aria-label="remove allow condition"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p style={{ color: '#666' }}>
+        Each deny becomes a <code>deny contains msg if</code> block with its message.
+      </p>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <input
+          value={denyDraft}
+          placeholder='condition, e.g. input.method == "DELETE"'
+          onChange={(e) => setDenyDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addDeny()}
+          style={{ ...inputStyle, flex: 2 }}
+        />
+        <input
+          value={denyMessage}
+          placeholder="message"
+          onChange={(e) => setDenyMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addDeny()}
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <Button variant="secondary" onClick={addDeny}>
+          Add deny
+        </Button>
+      </div>
+
+      {denies.length > 0 && (
+        <ul style={{ paddingLeft: '1.1rem', margin: '0 0 1rem' }}>
+          {denies.map((deny, i) => (
+            <li key={i} style={{ fontFamily: 'monospace', fontSize: 13 }}>
+              {deny.condition} <span style={{ color: '#888' }}>→ {deny.message}</span>{' '}
+              <button
+                onClick={() => setDenies((prev) => prev.filter((_, j) => j !== i))}
+                style={removeStyle}
+                aria-label="remove deny rule"
               >
                 ×
               </button>
