@@ -1,0 +1,27 @@
+# Routes the domain to the web Service and terminates TLS (cert from cert-manager).
+# All traffic hits web; nginx inside the web pod proxies /api to the pbac Service.
+# Replace riyadennis.com with your domain.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: site
+  namespace: riyadennis
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - riyadennis.com
+      secretName: site-tls
+  rules:
+    - host: riyadennis.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

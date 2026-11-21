@@ -7,3 +7,6 @@ generated
 .env
 .env.*
 !.env.example
+
+# Filled-in k8s secret (keep only the .example template in git)
+deploy/k8s/pbac-secret.yaml

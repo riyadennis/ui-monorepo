@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbac
+  namespace: riyadennis
+  labels: { app: pbac }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: pbac }
+  template:
+    metadata:
+      labels: { app: pbac }
+    spec:
+      containers:
+        - name: pbac
+          # Replace with your pushed image (built from the pbac repo Dockerfile).
+          image: riyadennis/pbac:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pbac-secrets
+                  key: DATABASE_URL
+          readinessProbe:
+            httpGet: { path: /policies, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /policies, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbac
+  namespace: riyadennis
+spec:
+  selector: { app: pbac }
+  ports:
+    - port: 8080
+      targetPort: 8080
