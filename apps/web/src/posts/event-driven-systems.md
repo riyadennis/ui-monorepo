@@ -2,6 +2,8 @@
 
 When I started working with Kafka, it initially seemed like just another message pub-sub system similar to SQS or RabbitMQ. However, after deeper exploration, I discovered it offers considerably more functionality. The combination of topics, partitions, consumers, and consumer groups provides enhanced control and coordination for real-time data storage and retrieval.
 
+![A Kafka broker holding topics split into partitions, with producers writing to partition offsets and consumers reading from them.](/kafka-broker.webp)
+
 ### Kafka as a Source of Truth
 
 > Kafka can become a source of truth for all the data in an organisation.

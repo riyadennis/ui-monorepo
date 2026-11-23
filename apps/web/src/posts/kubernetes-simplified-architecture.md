@@ -4,7 +4,7 @@ Kubernetes is a tool designed to automatically deploy, scale, and maintain softw
 
 The fundamental infrastructure component in Kubernetes is the Node — a physical or virtual machine running on-premises or in the cloud. Two types exist: master nodes and worker nodes (also called minions). Multiple nodes together form a cluster.
 
-![Kubernetes cluster architecture: a master node with the Kube API Server, Scheduler, Controller Managers and ETCD, connected to worker nodes running the Kubelet, container runtime and Kube proxy.](/k8s.png)
+![Kubernetes cluster architecture: a master node with the Kube API Server, Scheduler, Controller Managers and ETCD, connected to worker nodes running the Kubelet, container runtime and Kube proxy.](/k8s.webp)
 
 ## Master Node Components
 
