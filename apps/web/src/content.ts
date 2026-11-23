@@ -113,28 +113,35 @@ export const projects: Project[] = [
 ];
 
 export interface Post {
+  slug: string;
   title: string;
   date: string;
   summary?: string;
-  href: string;
+  /** The original URL on the old site, shown as an "originally published" link. */
+  originalUrl?: string;
 }
 
 export const posts: Post[] = [
   {
-    title: 'Striving for perfection every day',
+    slug: 'kubernetes-simplified-architecture',
+    title: 'Kubernetes Simplified Architecture',
     date: '2022-09-13',
-    summary: 'Striving for perfection every day.',
-    href: 'https://www.riyadennis.com/blog/732bbe72283',
+    summary: 'Nodes, clusters, and the control plane — a plain-English tour of how Kubernetes fits together.',
+    originalUrl: 'https://www.riyadennis.com/blog/732bbe72283',
   },
   {
+    slug: 'event-driven-systems',
     title: 'Event Driven Systems',
     date: '2021-08-06',
-    href: 'https://www.riyadennis.com/blog/event-driven-systems',
+    summary: 'Why Kafka is more than a pub/sub queue, and patterns for integrating it into microservices.',
+    originalUrl: 'https://www.riyadennis.com/blog/event-driven-systems',
   },
   {
+    slug: 'go-core-values',
     title: 'Go core values',
     date: '2021-06-29',
-    href: 'https://www.riyadennis.com/blog/go-core-values',
+    summary: "Clarity, simplicity, and productivity — Dave Cheney's values and what they mean in practice.",
+    originalUrl: 'https://www.riyadennis.com/blog/go-core-values',
   },
 ];
 
