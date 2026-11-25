@@ -36,13 +36,15 @@ the Vite dev proxy. pbac runs its DB migrations on startup against RDS.
 | `k8s/pbac-secret.example.yaml` | Template for the RDS connection string |
 | `k8s/ingress.yaml` | Domain routing + TLS |
 | `k8s/clusterissuer.yaml` | Let's Encrypt issuer |
+| `aws/setup-github-oidc.sh` | One-time IAM role so CI can push to ECR Public via OIDC |
 
 ---
 
 ## 0. Prerequisites
 
 - An AWS account, and a domain you control (DNS managed anywhere).
-- A container registry. This guide uses **Docker Hub** (`riyadennis/...`).
+- A container registry. This guide uses **Public ECR** (`public.ecr.aws/riyadennis/...`).
+  Public images are pulled anonymously, so the nodes need no pull secret.
 - Local tools: `docker`, `kubectl`, `ssh`, and the `pbac` repo checked out.
 
 ## 1. Provision PostgreSQL on RDS
@@ -90,32 +92,38 @@ kubectl -n cert-manager rollout status deploy/cert-manager-webhook
 > On a single node, ingress-nginx's Service is `LoadBalancer`; k3s's ServiceLB
 > (klipper) will bind it to the node's ports 80/443, which your SG already allows.
 
-## 5. Build and push the images
+## 5. Build and push the images (Public ECR)
+
+Create the repos once, then log Docker in to Public ECR. The API and login
+server for Public ECR are **us-east-1 only** (images still serve globally):
+
+```bash
+aws ecr-public create-repository --repository-name ui-monorepo --region us-east-1
+aws ecr-public create-repository --repository-name pbac        --region us-east-1
+
+aws ecr-public get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin public.ecr.aws
+```
 
 **web** (build context is the repo root):
 
 ```bash
 # from the ui-monorepo root
-docker build -t riyadennis/web:latest -f apps/web/Dockerfile .
-docker push riyadennis/web:latest
+docker build -t public.ecr.aws/riyadennis/ui-monorepo:latest -f apps/web/Dockerfile .
+docker push    public.ecr.aws/riyadennis/ui-monorepo:latest
 ```
 
 **pbac** (from the pbac repo):
 
 ```bash
 cd ~/go/src/github.com/riyadennis/pbac
-docker build -t riyadennis/pbac:latest .
-docker push riyadennis/pbac:latest
+docker build -t public.ecr.aws/riyadennis/pbac:latest .
+docker push    public.ecr.aws/riyadennis/pbac:latest
 ```
 
-If your Docker Hub repositories are private, create a pull secret and add it to
-the Deployments' `imagePullSecrets`:
-
-```bash
-kubectl -n riyadennis create secret docker-registry dockerhub \
-  --docker-server=https://index.docker.io/v1/ \
-  --docker-username=riyadennis --docker-password=<DOCKERHUB_TOKEN>
-```
+> Public ECR images are pulled **anonymously**, so k3s needs **no imagePullSecret**
+> — just reference the `public.ecr.aws/riyadennis/...` images in the manifests.
+> (This is why public ECR is the least-effort registry for a self-managed cluster.)
 
 ## 6. Create the namespace and the DB secret
 
@@ -183,7 +191,10 @@ the EC2 instance, and release the Elastic IP (idle EIPs are billed).
 
 - **GitOps**: install Argo CD and point it at `deploy/k8s/` so pushes to `main`
   reconcile the cluster — a natural showcase given your background.
-- **CI**: a GitHub Actions workflow to build+push both images on release.
+- **CI**: `.github/workflows/build-push.yml` already builds and pushes the web
+  image to ECR Public on push to `main`. It authenticates via GitHub OIDC — run
+  `deploy/aws/setup-github-oidc.sh` once to create the IAM role it assumes. Add an
+  equivalent workflow in the pbac repo for that image.
 - **Multi-node / EKS**: the manifests are portable; only the cluster install and
   the ingress LoadBalancer provisioning change.
 ```

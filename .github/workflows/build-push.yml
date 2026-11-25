@@ -6,8 +6,13 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  id-token: write # required for OIDC auth to AWS
+  contents: read
+
 env:
-  IMAGE: riyadennis/web
+  IMAGE: public.ecr.aws/riyadennis/ui-monorepo
+  AWS_REGION: us-east-1 # Public ECR's API lives only in us-east-1
 
 jobs:
   build-push:
@@ -19,11 +24,17 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+          # This role must trust GitHub's OIDC provider (see the IAM setup below).
+          role-to-assume: arn:aws:iam::328411615730:role/github-actions-ecr
+
+      - name: Log in to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
       - name: Derive image tags
         id: meta

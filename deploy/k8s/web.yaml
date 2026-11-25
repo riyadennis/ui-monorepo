@@ -14,8 +14,9 @@ spec:
     spec:
       containers:
         - name: web
-          # Replace with your pushed image (built from apps/web/Dockerfile).
-          image: riyadennis/web:latest
+          # Public ECR image (built from apps/web/Dockerfile).
+          # Public ECR is pulled anonymously — no imagePullSecret needed.
+          image: public.ecr.aws/riyadennis/ui-monorepo:latest
           ports:
             - containerPort: 80
           readinessProbe:

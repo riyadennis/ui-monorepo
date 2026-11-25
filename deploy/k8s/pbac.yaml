@@ -14,8 +14,9 @@ spec:
     spec:
       containers:
         - name: pbac
-          # Replace with your pushed image (built from the pbac repo Dockerfile).
-          image: riyadennis/pbac:latest
+          # Public ECR image (built from the pbac repo Dockerfile).
+          # Requires a separate public ECR repo named "pbac".
+          image: public.ecr.aws/riyadennis/pbac:latest
           ports:
             - containerPort: 8080
           env:
